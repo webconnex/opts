@@ -339,7 +339,6 @@ func Parse() {
 // This function was created specifically to enable unit testing - the proper
 // entry point for most programs is Parse.
 func ParseArgs(args []string) {
-	addHelp()
 	p := Parsing{}
 	for i := 1; i < len(args); i++ {
 		arg := args[i]

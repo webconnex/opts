@@ -6,57 +6,54 @@ package opts
 
 import (
 	"fmt"
-	"strings"
+	"bytes"
 	"text/tabwriter"
 )
 
 var printHelp *bool
 
-// addHelp adds the -h and --help options, if they do not already exist.
-func addHelp() {
-	printHelp = Flag("-h", "--help", "print help screen")
+// AddHelp adds the -h and --help options
+func AddHelp(desc string) {
+	printHelp = Flag("-h", "--help", desc)
 }
 
-type helpWriter struct {
-	content string
-}
-
-func (w *helpWriter) Write(data []byte) (n int, err error) {
-	n = len(data)
-	w.content += string(data)
-	return
-}
-
-func optionHelp(opt Option) (str string) {
-	return
-}
-
-func helpLines() (lines []string) {
-	hw := &helpWriter{}
-	// start formatting with the tabwriter
-	w := tabwriter.NewWriter(hw, 0, 2, 1, ' ', 0)
-	for _, opt := range optionList {
-		fmt.Print("  ")
-		if opt.Forms()[0] != "" {
-			fmt.Print(opt.Forms()[0]+",")
-		}
-		fmt.Print("\t")
-	}
-	w.Flush()
-	lines = strings.Split(hw.content, "\n")
-	return lines
-}
-
-// Help prints a generated help screen, from the options previously passed
+// Help prints a generated help screen
 func Help() {
-	fmt.Printf("usage: %s %s\n%s\n", Xname, Usage, Description)
-	// a record of which options we've already printed
-	done := map[string]bool{}
-	for name, opt := range options {
-		if !done[name] {
-			for _, form := range opt.Forms() {
-				done[form] = true
+	buf := &bytes.Buffer{}
+	w := tabwriter.NewWriter(buf, 0, 2, 2, ' ', 0)
+	for _, opt := range optionList {
+		forms := opt.Forms()
+		if len(forms) < 1 {
+			continue
+		}
+		arg := opt.Arg()
+		name := opt.ArgName()
+		w.Write([]byte{'\t'})
+		for i, f := range forms {
+			if i > 0 {
+				w.Write([]byte{',', ' '})
+			} 
+			w.Write([]byte(f))
+			if arg > NOARG {
+				if len(f) > 2 {
+					w.Write([]byte{'='})
+				} else {
+					w.Write([]byte{' '})
+				}
+				if arg > OPTARG {
+					w.Write([]byte(name))
+				} else {
+					w.Write([]byte{'['})
+					w.Write([]byte(name))
+					w.Write([]byte{']'})
+				}
 			}
 		}
+		w.Write([]byte{'\t'})
+		w.Write([]byte(opt.Description()))
+		w.Write([]byte{'\n'})
 	}
+	w.Flush()
+	fmt.Printf("Usage: %s %s\n%s\n", Xname, Usage, Description)
+	println(string(buf.Bytes()))
 }
